@@ -1,0 +1,19 @@
+{
+  "name": "folie",
+  "version": "0.0.1",
+  "description": "Player de sous titres",
+  "main": "src/player.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xseignard/folie"
+  },
+  "author": "Xavier Seignard <xavier.seignard@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/xseignard/folie/issues"
+  },
+  "homepage": "https://github.com/xseignard/folie",
+  "dependencies": {
+    "subtitles-parser": "0.0.2"
+  }
+}
