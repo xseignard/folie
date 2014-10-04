@@ -8,7 +8,7 @@ var Player = function(srtFile) {
 	this.current;
 	this.i = 0;
 	var self = this;
-	fs.readFile(srtFile, 'utf-8', function(err, data) {
+	fs.readFile(srtFile, 'binary', function(err, data) {
 		if (err) throw err;
 		self.srt = parser.fromSrt(data, true);
 		self.emit('ready');
