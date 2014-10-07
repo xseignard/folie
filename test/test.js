@@ -1,6 +1,6 @@
 var dgram = require('dgram'),
 	Player = require('../src/player'),
-	player = new Player(__dirname + '/../srt/folie.srt', __dirname + '/../srt/folie.json');
+	player = new Player(__dirname + '/../srt/prologue.srt');
 	Boitier = require('../src/boitier.js'),
 	boitier = new Boitier('/dev/ttyUSB0');
 	Logger = require('../src/logger.js'),
@@ -10,6 +10,8 @@ var dgram = require('dgram'),
 var host = '192.168.2.';
 var first = 2;
 var port = 8888;
+
+var start, end, size;
 
 // data from boitier
 boitier.on('change', function(data) {
@@ -24,9 +26,13 @@ client.on('listening', function () {});
 
 // message is received when the display ended scrolling the current text
 client.on('message', function (message, remote) {
+	end = new Date();
+	console.log('duration: ' + (end - start) / 1000 + ', size: ' + size);
+	/*
 	log.fromClient(remote.address + ':' + remote.port +' - ' + message.toString('binary').substring(0, 20) + '...');
 	var next = parseInt(remote.address.substr(host.length, remote.address.length)) + 1;
 	sendText(message, host + next);
+	*/
 });
 
 client.bind(3333, '192.168.2.1');
@@ -34,7 +40,7 @@ client.bind(3333, '192.168.2.1');
 
 // app sending messages
 player.on('ready', function() {
-	player.readNext(true);
+	player.timing();
 });
 
 player.on('stop', function() {
@@ -44,8 +50,9 @@ player.on('stop', function() {
 
 player.on('next', function(next) {
 	sendText(next.text, host + first);
+	size = next.text.length;
 	//console.log(next.text);
-	player.readNext(true);
+	player.timing();
 });
 
 player.on('end', function() {
@@ -60,7 +67,8 @@ process.on('exit', function() {
 var sendText = function (text, ip) {
 	var message = new Buffer(text, 'binary');
 	client.send(message, 0, message.length, port, ip, function(err, bytes) {
-		log.toClient(ip +':'+ port +' - ' + message.toString('binary').substring(0, 20) + '...');
+		//log.toClient(ip +':'+ port +' - ' + message.toString('binary').substring(0, 20) + '...');
+		start = new Date();
 	});
 };
 

@@ -25,7 +25,7 @@ EthernetUDP Udp;
 // default interval for scrolling speed (in ms)
 int interval = 30;
 // last time check
-long last;
+unsigned long last;
 // flag to check whether a marquee is ended or not
 boolean marqueeEnd = false;
 // flag to check if the first subtitle has been received
@@ -40,7 +40,7 @@ int xStartMarquee = width - 1;
 void setup() {
   Ethernet.begin(mac, ip);
   Udp.begin(localPort);
-  Timer1.initialize(5000);
+  Timer1.initialize(1000);
   Timer1.attachInterrupt(ScanDMD);
   dmd.selectFont(Arial_Black_16_Extended);
   dmd.clearScreen(false);
@@ -62,7 +62,7 @@ void loop() {
     handlePacket(packetBuffer);
   }
   moveText();
-  delay(1);
+  //delay(1);
 }
 
 void handlePacket(char* text) {
@@ -75,27 +75,32 @@ void handlePacket(char* text) {
     dmd.drawMarquee(text, strlen(text), xStartMarquee, 0);
     if (marqueeEnd && firstSubReceived) marqueeEnd = false;
     if (!firstSubReceived) firstSubReceived = true;
-    last = millis();
+    last = micros();
     Serial.println(text);
   }
 }
 
 void moveText() {
-  long timer = millis();
+  unsigned long timer = micros();
   if(timer - last > interval && !marqueeEnd && firstSubReceived) {
     width--;
     last = timer;
     marqueeEnd = dmd.stepMarquee(-1,0);
     if (width == 0 && !reached) {
       reached = true;
+      /*
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write(packetBuffer);
       Udp.endPacket();
+      */
     }
     Serial.println(marqueeEnd);
     if (marqueeEnd) {
       width = 32*DISPLAYS_ACROSS;
       reached = false;
+      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+      Udp.write("marqueeEnd");
+      Udp.endPacket();
       memset(packetBuffer, 0, sizeof(packetBuffer));
     }
   }

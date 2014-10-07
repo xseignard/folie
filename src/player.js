@@ -3,55 +3,60 @@ var fs = require('fs'),
 	util = require('util'),
 	EventEmitter = require('events').EventEmitter;
 
-var Player = function(srtFile, dataFile) {
+var Player = function(srtFile) {
 	this.srt;
-	this.data = {};
 	this.current;
-	this.i = 0;
+	this.i = -1;
 	var self = this;
 	fs.readFile(srtFile, 'binary', function(err, data) {
 		if (err) throw err;
 		self.srt = parser.fromSrt(data, true);
-		if (dataFile) {
-			fs.readFile(dataFile, function(err, data) {
-				if (err) throw err;
-				self.data = JSON.parse(data);
-				self.emit('ready');
-			});
-		}
-		else {
-			self.emit('ready');
-		}
+		self.emit('ready');
 	});
 };
 util.inherits(Player, EventEmitter);
 
 
-Player.prototype.readNext = function(timing) {
+Player.prototype.timing = function() {
+	if (this.i <= 0) this.i = 0;
 	var self = this;
 	if (self.i < self.srt.length) {
 		var next = self.srt[self.i];
-		for(var k in self.data[self.i]) next[k] = self.data[self.i][k];
-		if (timing) {
-			var stopTimeout = self.current ? self.current.endTime - self.current.startTime : 0;
-			var nextTimeout = self.current ? next.startTime - self.current.endTime : 0;
+		var stopTimeout = self.current ? self.current.endTime - self.current.startTime : 0;
+		var nextTimeout = self.current ? next.startTime - self.current.endTime : 0;
+		setTimeout(function() {
+			self.emit('stop');
 			setTimeout(function() {
-				self.emit('stop');
-				setTimeout(function() {
-					self.current = next;
-					self.i++;
-					self.emit('next', next);
-				}, nextTimeout);
-			}, stopTimeout);
-		}
-		else {
-			self.current = next;
-			self.i++;
-			self.emit('next', next);
-		}
+				self.current = next;
+				self.i++;
+				self.emit('next', next);
+			}, nextTimeout);
+		}, stopTimeout);
 	}
 	else {
 		self.emit('end');
+	}
+};
+
+Player.prototype.next = function() {
+	this.i++;
+	if (this.i < this.srt.length) {
+		var next = this.srt[this.i];
+		this.current = next;
+		this.emit('next', next);
+	}
+	else {
+		this.emit('end');
+	}
+};
+
+Player.prototype.previous = function() {
+	if (this.i >= 0) {
+		this.i--;
+		if (this.i <= 0) this.i = 0;
+		var previous = this.srt[this.i];
+		this.current = previous;
+		this.emit('previous', previous);
 	}
 };
 
