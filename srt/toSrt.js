@@ -1,11 +1,10 @@
 var fs = require('fs'),
-	readline = require('readline');
-
-var out = fs.createWriteStream(__dirname + '/folie.srt', { encoding: 'binary' });
+	readline = require('readline'),
+	iconv = require('iconv-lite');
 
 var rd = readline.createInterface({
-	input: fs.createReadStream(__dirname + '/prologue.txt'),
-	output: out,
+	input: fs.createReadStream(__dirname + '/folie-250.txt').pipe(iconv.decodeStream('ISO-8859-1')),
+	output: null,
 	terminal: false
 });
 
@@ -33,10 +32,10 @@ var toSrtTiming = function(time) {
 rd.on('line', function(line) {
 	i++;
 	var from = toSrtTiming(time);
-	time += 25;
+	time += 12;
 	var to = toSrtTiming(time);
-	time += 0.25;
-	out.write(new Buffer(i, 'binary'));
-	out.write(new Buffer(from + ' --> ' + to));
-	out.write(new Buffer(line));
+	time += 12;
+	console.log(i);
+	console.log(from + ' --> ' + to);
+	console.log(line);
 });
