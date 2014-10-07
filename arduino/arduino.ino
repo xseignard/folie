@@ -21,8 +21,21 @@ unsigned int localPort = 8888;
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP Udp;
 
+// timing stuff
 // default interval for scrolling speed (in ms)
-int interval = 20;
+int interval = 30;
+// last time check
+long last;
+// flag to check whether a marquee is ended or not
+boolean marqueeEnd = false;
+// flag to check if the first subtitle has been received
+boolean firstSubReceived = false;
+// width of the display
+int width = 32*DISPLAYS_ACROSS;
+// flag to indicates whether a marquee reached the end of the display
+boolean reached = false;
+// x offset where marquee starts
+int xStartMarquee = width - 1;
 
 void setup() {
   Ethernet.begin(mac, ip);
@@ -38,7 +51,7 @@ void setup() {
   delay(500);
   dmd.clearScreen(true);
   Serial.begin(9600);
-  Serial.println(freeRam());
+  //Serial.println(freeRam());
 }
 
 void loop() {
@@ -46,29 +59,45 @@ void loop() {
   if (packetSize) {
     Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
     Serial.println(packetBuffer);
-    displayText(packetBuffer);
+    handlePacket(packetBuffer);
   }
-  delay(100);
+  moveText();
+  delay(1);
 }
 
-void displayText(char* text) {
-  Serial.println(freeRam());
+void handlePacket(char* text) {
+  //Serial.println(freeRam());
   if (text[0] == '#') {
     char tmp[] = {text[1], text[2], text[3]};
     interval = atoi(tmp);
   }
   else {
-    dmd.drawMarquee(text, strlen(text), (32*DISPLAYS_ACROSS)-1, 0);
-    long start = millis();
-    long timer = start;
-    boolean ret = false;
-    while(!ret) {
-      if ((timer + interval) < millis()) {
-        ret = dmd.stepMarquee(-1,0);
-        timer = millis();
-      }
+    dmd.drawMarquee(text, strlen(text), xStartMarquee, 0);
+    if (marqueeEnd && firstSubReceived) marqueeEnd = false;
+    if (!firstSubReceived) firstSubReceived = true;
+    last = millis();
+    Serial.println(text);
+  }
+}
+
+void moveText() {
+  long timer = millis();
+  if(timer - last > interval && !marqueeEnd && firstSubReceived) {
+    width--;
+    last = timer;
+    marqueeEnd = dmd.stepMarquee(-1,0);
+    if (width == 0 && !reached) {
+      reached = true;
+      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+      Udp.write(packetBuffer);
+      Udp.endPacket();
     }
-    memset(packetBuffer, 0, sizeof(packetBuffer));
+    Serial.println(marqueeEnd);
+    if (marqueeEnd) {
+      width = 32*DISPLAYS_ACROSS;
+      reached = false;
+      memset(packetBuffer, 0, sizeof(packetBuffer));
+    }
   }
 }
 
