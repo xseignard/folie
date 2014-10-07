@@ -3,7 +3,7 @@ var dgram = require('dgram'),
 	Player = require('../src/player'),
 	player = new Player(__dirname + '/../srt/folie-250.srt');
 	Boitier = require('../src/boitier.js'),
-	boitier = new Boitier('/dev/ttyUSB0');
+	boitier = new Boitier('/dev/cu.PL2303-00001014');
 	Logger = require('../src/logger.js'),
 	log = new Logger();
 
@@ -30,7 +30,7 @@ client.on('message', function (message, remote) {
 	//sendText(message, host + next);
 });
 
-client.bind(3333, '192.168.2.1');
+client.bind(3333, '192.168.2.6');
 
 
 // app sending messages
