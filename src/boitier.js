@@ -16,7 +16,7 @@ var Boitier = function(port) {
 	sp.on('data', function(data) {
 		tmp += data.toString();
 		if (tmp.indexOf('\r') >= 0) {
-			tmp = Math.round(map(parseInt(tmp), 1, 99, 1, 5000));
+			tmp = Math.round(map(parseInt(tmp), 1, 99, 1, 1000));
 			if (tmp < 10) {
 				tmp = '000' + tmp;
 			}

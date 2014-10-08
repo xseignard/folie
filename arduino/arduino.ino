@@ -23,7 +23,7 @@ EthernetUDP Udp;
 
 // timing stuff
 // default interval for scrolling speed (in ms)
-int interval = 30;
+long interval = 30;
 // last time check
 unsigned long last;
 // flag to check whether a marquee is ended or not
@@ -43,6 +43,11 @@ void setup() {
   Timer1.initialize(1000);
   Timer1.attachInterrupt(ScanDMD);
   dmd.selectFont(Arial_Black_16_Extended);
+  // blink display to notify readiness
+  blinkDisplay();
+}
+
+void blinkDisplay() {
   dmd.clearScreen(false);
   delay(500);
   dmd.clearScreen(true);
@@ -50,33 +55,33 @@ void setup() {
   dmd.clearScreen(false);
   delay(500);
   dmd.clearScreen(true);
-  Serial.begin(9600);
-  //Serial.println(freeRam());
 }
 
 void loop() {
+  // handle incoming messages
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
-    Serial.println(packetBuffer);
     handlePacket(packetBuffer);
   }
+  // scroll the marque
   moveText();
-  //delay(1);
 }
 
 void handlePacket(char* text) {
-  //Serial.println(freeRam());
+  // if char starts with a #, it's an "adjust interval" message
   if (text[0] == '#') {
-    char tmp[] = {text[1], text[2], text[3]};
-    interval = atoi(tmp);
+    // reconstruct the new interval to apply
+    char tmp[] = {text[1], text[2], text[3], text[4]};
+    // from millis to micros
+    interval = atol(tmp) * 1000;
   }
+  // else a text to display
   else {
     dmd.drawMarquee(text, strlen(text), xStartMarquee, 0);
     if (marqueeEnd && firstSubReceived) marqueeEnd = false;
     if (!firstSubReceived) firstSubReceived = true;
     last = micros();
-    Serial.println(text);
   }
 }
 
@@ -87,20 +92,17 @@ void moveText() {
     last = timer;
     marqueeEnd = dmd.stepMarquee(-1,0);
     if (width == 0 && !reached) {
+      // the first letter reached the end of the display
+      // time to send message to activate next display
       reached = true;
-      /*
       Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
       Udp.write(packetBuffer);
       Udp.endPacket();
-      */
     }
-    Serial.println(marqueeEnd);
     if (marqueeEnd) {
       width = 32*DISPLAYS_ACROSS;
       reached = false;
-      Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-      Udp.write("marqueeEnd");
-      Udp.endPacket();
+      // clear packetBuffer since we don't need the message anymore
       memset(packetBuffer, 0, sizeof(packetBuffer));
     }
   }
@@ -108,10 +110,4 @@ void moveText() {
 
 void ScanDMD() { 
   dmd.scanDisplayBySPI();
-}
-
-int freeRam () {
-  extern int __heap_start, *__brkval; 
-  int v; 
-  return (int) &v - (__brkval == 0 ? (int) &__heap_start : (int) __brkval); 
 }
