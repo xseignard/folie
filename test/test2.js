@@ -2,6 +2,7 @@ var dgram = require('dgram'),
 	keypress = require('keypress'),
 	Player = require('../src/player'),
 	player = new Player(__dirname + '/../srt/folie-250.srt');
+	//player = new Player(__dirname + '/../srt/pouet.srt');
 	Boitier = require('../src/boitier.js'),
 	boitier = new Boitier('/dev/cu.PL2303-00001014');
 	Logger = require('../src/logger.js'),
@@ -12,9 +13,14 @@ var host = '192.168.2.';
 var first = 2;
 var port = 8888;
 
+// current text that is displayed
+var current = '';
+
 // data from boitier
 boitier.on('change', function(data) {
-	sendText('#' + data, host + first);
+	for (var i = first; i <= 5; i++) {
+		sendText('#' + data, host + i);
+	}
 	//log.fromBoitier('#' + data);
 });
 
@@ -27,7 +33,7 @@ client.on('listening', function () {});
 client.on('message', function (message, remote) {
 	//log.fromClient(remote.address + ':' + remote.port +' - ' + message.toString('binary').substring(0, 20) + '...');
 	var next = parseInt(remote.address.substr(host.length, remote.address.length)) + 1;
-	//sendText(message, host + next);
+	sendText(current.text, host + next);
 });
 
 client.bind(3333, '192.168.2.6');
@@ -38,6 +44,7 @@ player.on('ready', function() {
 });
 
 player.on('next', function(next) {
+	current = next;
 	sendText(next.text, host + first);
 });
 
