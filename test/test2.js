@@ -5,9 +5,7 @@ var dgram = require('dgram'),
 	io = require('socket.io')(http),
 	path = require('path'),
 	Player = require('../src/player'),
-	player = new Player(__dirname + '/../srt/folie-250.srt'),
-	Boitier = require('../src/boitier.js'),
-	boitier = new Boitier('/dev/ttyUSB0');
+	player = new Player(__dirname + '/../srt/folie-250.srt');
 
 // arduinos IP/PORT
 var host = '192.168.2.';
@@ -38,7 +36,7 @@ client.on('message', function (message, remote) {
 	}
 });
 
-client.bind(3333, '192.168.2.1');
+client.bind(3333, '192.168.2.6');
 
 
 // app sending messages
