@@ -8,7 +8,10 @@
 // DMD stuff
 #define DISPLAYS_ACROSS 5
 #define DISPLAYS_DOWN 1
-DMD dmd(DISPLAYS_ACROSS, DISPLAYS_DOWN);
+#define WHITE 0xFF
+#define BLACK 0
+#define DISPLAYS_BPP 1
+DMD dmd(DISPLAYS_ACROSS, DISPLAYS_DOWN, DISPLAYS_BPP);
 
 // Ethernet/UDP stuff
 
@@ -16,11 +19,11 @@ DMD dmd(DISPLAYS_ACROSS, DISPLAYS_DOWN);
 #define UDP_TX_PACKET_MAX_SIZE 860
 
 // one
-//byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-//IPAddress ip(192, 168, 2, 2);
+byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
+IPAddress ip(192, 168, 2, 2);
 // two
-byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
-IPAddress ip(192, 168, 2, 3);
+//byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xEF };
+//IPAddress ip(192, 168, 2, 3);
 // three
 //byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xFE };
 //IPAddress ip(192, 168, 2, 4);
@@ -51,21 +54,22 @@ int xStartMarquee = width - 1;
 void setup() {
   Ethernet.begin(mac, ip);
   Udp.begin(localPort);
-  Timer1.initialize(5000);
+  Timer1.initialize(2000);
   Timer1.attachInterrupt(ScanDMD);
   dmd.selectFont(Arial_Black_16_ISO_8859_1);
   // blink display to notify readiness
   blinkDisplay();
+  delay(1000);
 }
 
 void blinkDisplay() {
-  dmd.clearScreen(false);
+  dmd.clearScreen(WHITE);
   delay(500);
-  dmd.clearScreen(true);
+  dmd.clearScreen(BLACK);
   delay(500);
-  dmd.clearScreen(false);
+  dmd.clearScreen(WHITE);
   delay(500);
-  dmd.clearScreen(true);
+  dmd.clearScreen(BLACK);
 }
 
 void loop() {
@@ -73,7 +77,7 @@ void loop() {
   int packetSize = Udp.parsePacket();
   if (packetSize) {
     // clear previous things stored in the buffer
-    resetMarquee();
+    memset(packetBuffer, 0, sizeof(packetBuffer));
     Udp.read(packetBuffer, UDP_TX_PACKET_MAX_SIZE);
     handlePacket(packetBuffer);
   }
@@ -91,7 +95,10 @@ void handlePacket(char* text) {
   }
   // else a text to display
   else {
-    dmd.drawMarquee(text, strlen(text), xStartMarquee, 0);
+    width = 32*DISPLAYS_ACROSS;
+    reached = false;
+    dmd.clearScreen(BLACK);
+    dmd.drawMarquee(text, strlen(text), xStartMarquee, 0, WHITE, BLACK);
     if (marqueeEnd && firstSubReceived) marqueeEnd = false;
     if (!firstSubReceived) firstSubReceived = true;
     last = millis();
@@ -113,7 +120,12 @@ void moveText() {
       Udp.endPacket();
     }
     if (marqueeEnd) {
-      resetMarquee();
+      width = 32*DISPLAYS_ACROSS;
+      reached = false;
+      dmd.clearScreen(BLACK);
+      // clear packetBuffer since we don't need the message anymore
+      memset(packetBuffer, 0, sizeof(packetBuffer));
+      
     }
   }
 }

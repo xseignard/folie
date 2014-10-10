@@ -5,31 +5,34 @@ var dgram = require('dgram'),
 	http = require('http').Server(app),
 	io = require('socket.io')(http),
 	path = require('path'),
+	osc = require('node-osc'),
+	oscServer = new osc.Server(5001, '0.0.0.0'),
 	Player = require('./src/player'),
-	player = new Player(__dirname + '/srt/folie-250.srt'),
-	Boitier = require('./src/boitier.js'),
-	boitier = new Boitier('/dev/ttyUSB0');
+	player = new Player(__dirname + '/srt/folie-250.srt');
 
 // arduinos IP/PORT
 var host = '192.168.2.';
-var first = 3;
-var last = 4;
+var first = 2;
+var last = 3;
 var port = 8888;
+// app receiving messages
+var client = dgram.createSocket('udp4');
 
 // current text that is displayed
 var current = '';
+// default speed
+var defaultSpeed = 11;
+// current speed
+var currentSpeed = 11;
 
-// data from boitier
-boitier.on('change', function(data) {
-	console.log('#' + data);
+// set default speed
+client.on('listening', function() {
+	console.log('#00' + currentSpeed);
 	console.log('-------------------------');
-	for (var i = first; i <= 5; i++) {
-		sendText('#' + data, host + i);
+	for (var i = first; i <= last; i++) {
+		sendText('#00' + currentSpeed, host + i);
 	}
 });
-
-// app receiving messages
-var client = dgram.createSocket('udp4');
 
 // message is received when the display ended scrolling the current text
 client.on('message', function (message, remote) {
@@ -115,10 +118,75 @@ io.on('connection', function(socket){
 	socket.on('interval', function(interval){
 		console.log('#00' + interval);
 		console.log('-------------------------');
-		for (var i = first; i <= 5; i++) {
+		for (var i = first; i <= last; i++) {
 			sendText('#00' + interval, host + i);
 		}
 	});
 });
 
 http.listen(3000);
+
+
+// wii
+oscServer.on('message', function (msg, rinfo) {
+	var route = msg[0],
+		value = msg[1];
+
+	if (!value) {
+		switch(route) {
+			case '/wii/1/button/A':
+			case '/wii/2/button/A':
+				player.next();
+				break;
+			case '/wii/1/button/B':
+			case '/wii/2/button/B':
+				player.previous();
+				break;
+			case '/wii/1/button/Minus':
+			case '/wii/2/button/Minus':
+				var msg = '';
+				currentSpeed += 10;
+				if (currentSpeed > 99) currentSpeed = 99;
+				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
+				console.log('#00' + msg);
+				console.log('-------------------------');
+				for (var i = first; i <= last; i++) {
+					sendText('#00' + msg, host + i);
+				}
+				break;
+			case '/wii/1/button/Plus':
+			case '/wii/2/button/Plus':
+				var msg = '';
+				currentSpeed -= 10;
+				if (currentSpeed < 1) currentSpeed = 1;
+				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
+				console.log('#00' + msg);
+				console.log('-------------------------');
+				for (var i = first; i <= last; i++) {
+					sendText('#00' + msg, host + i);
+				}
+				break;
+			case '/wii/1/button/Home':
+			case '/wii/2/button/Home':
+				currentSpeed = defaultSpeed;
+				console.log('#00' + currentSpeed);
+				console.log('-------------------------');
+				for (var i = first; i <= last; i++) {
+					sendText('#00' + currentSpeed, host + i);
+				}
+				break;
+			case '/wii/1/button/Left':
+			case '/wii/2/button/Left':
+				player.i = -1;
+				break;
+			case '/wii/1/button/Up':
+			case '/wii/2/button/Up':
+				player.i = 97;
+				break;
+			case '/wii/1/button/Right':
+			case '/wii/2/button/Right':
+				player.i = 195;
+				break;
+		}
+	}
+});
