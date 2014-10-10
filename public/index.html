@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>Folie</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+
+  <link href="vendor/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="style/style.css" rel="stylesheet">
+
+  <script type="text/javascript" src="vendor/jquery/dist/jquery.min.js"></script>
+  <script type="text/javascript" src="vendor/bootstrap/dist/js/bootstrap.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+
+<body>
+  <div class="container fill">
+    <div id="prevNext" class="row clearfix">
+      <div id="prev" class="col-md-6 col-sm-2 column">
+      </div>
+      <div id="next" class="col-md-6 col-sm-2 column">
+      </div>
+    </div>
+    <div class="row clearfix">
+      <div class="col-md-12 col-sm-12 column">
+        <input id="interval" type="range" value="5" max="10" min="1" step="1">
+      </div>
+    </div>
+  </div>
+  <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,16 +1,17 @@
 var dgram = require('dgram'),
 	keypress = require('keypress'),
+	app = require('express')(),
+	http = require('http').Server(app),
+	io = require('socket.io')(http),
+	path = require('path'),
 	Player = require('../src/player'),
-	player = new Player(__dirname + '/../srt/folie-250.srt');
-	//player = new Player(__dirname + '/../srt/pouet.srt');
+	player = new Player(__dirname + '/../srt/folie-250.srt'),
 	Boitier = require('../src/boitier.js'),
 	boitier = new Boitier('/dev/ttyUSB0');
-	Logger = require('../src/logger.js'),
-	log = new Logger();
 
 // arduinos IP/PORT
 var host = '192.168.2.';
-var first = 2;
+var first = 3;
 var port = 8888;
 
 // current text that is displayed
@@ -18,38 +19,41 @@ var current = '';
 
 // data from boitier
 boitier.on('change', function(data) {
+	console.log('#' + data);
+	console.log('-------------------------');
 	for (var i = first; i <= 5; i++) {
 		sendText('#' + data, host + i);
 	}
-	//log.fromBoitier('#' + data);
 });
 
 // app receiving messages
 var client = dgram.createSocket('udp4');
 
-client.on('listening', function () {});
-
 // message is received when the display ended scrolling the current text
 client.on('message', function (message, remote) {
-	//log.fromClient(remote.address + ':' + remote.port +' - ' + message.toString('binary').substring(0, 20) + '...');
 	var next = parseInt(remote.address.substr(host.length, remote.address.length)) + 1;
-	sendText(current.text, host + next);
+	if (next <= 4) {
+		console.log('###############' + next);
+		sendText(current.text, host + next);
+	}
 });
 
 client.bind(3333, '192.168.2.1');
 
 
 // app sending messages
-player.on('ready', function() {
-});
-
 player.on('next', function(next) {
 	current = next;
-	sendText(next.text, host + first);
+	console.log(current.text);
+	console.log('-------------------------');
+	sendText(current.text, host + first);
 });
 
 player.on('previous', function(previous) {
-	sendText(previous.text, host + first);
+	current = previous;
+	console.log(current.text);
+	console.log('-------------------------');
+	sendText(current.text, host + first);
 });
 
 player.on('end', function() {
@@ -63,15 +67,11 @@ process.on('exit', function() {
 
 var sendText = function (text, ip) {
 	var message = new Buffer(text, 'binary');
-	client.send(message, 0, message.length, port, ip, function(err, bytes) {
-		//log.toClient(ip +':'+ port +' - ' + message.toString('binary'));
-		console.log(message.toString('binary'));
-		console.log('-------------------------');
-	});
+	client.send(message, 0, message.length, port, ip);
 };
 
 
-//
+// control from the keyboard
 keypress(process.stdin);
 
 // listen for the keypress event
@@ -95,3 +95,27 @@ process.stdin.on('keypress', function (ch, key) {
 
 process.stdin.setRawMode(true);
 process.stdin.resume();
+
+// control from a webapp
+app.get('/', function(req, res){
+	var index = path.join(__dirname, '../public', 'index.html');
+	res.sendFile(index);
+});
+
+io.on('connection', function(socket){
+	socket.on('prev', function(){
+		player.previous();
+	});
+	socket.on('next', function(){
+		player.next();
+	});
+	socket.on('interval', function(interval){
+		console.log('#00' + interval);
+		console.log('-------------------------');
+		for (var i = first; i <= 5; i++) {
+			sendText('#00' + interval, host + i);
+		}
+	});
+});
+
+http.listen(3000);

@@ -1,0 +1,52 @@
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+
+.fill { 
+  overflow: hidden;
+  min-height: 100%;
+  height: 100%;
+}
+
+#prevNext {
+  height: 75%;
+}
+
+#prev {
+  background-color: lightcoral;
+  height: 90%;
+}
+#next {
+  background-color: lightgreen;
+  height: 90%;
+}
+
+input[type="range"] {
+  -webkit-appearance:none !important;
+  height: 6px;
+  background: rgb(243, 228, 12);
+  width: 80%;
+  margin: 8% 10%;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance:none !important;
+  width: 60px;
+  height: 60px;
+  border-radius: 30px;
+  background: rgb(0,0,0);
+}
+input[type="range"]:after,
+input[type="range"]:before {
+    position: absolute;
+    font-size: xx-large;
+    color: #aaa;
+}
+input[type="range"]:before {
+    left: 0em;
+    content: "Rapide";
+}
+input[type="range"]:after {
+    right:  0em;
+    content: "Lent";
+}
