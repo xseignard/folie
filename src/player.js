@@ -3,6 +3,8 @@ var fs = require('fs'),
 	util = require('util'),
 	EventEmitter = require('events').EventEmitter;
 
+var to1, to2;
+
 var Player = function(srtFile) {
 	this.srt;
 	this.current;
@@ -24,9 +26,9 @@ Player.prototype.timing = function() {
 		var next = self.srt[self.i];
 		var stopTimeout = self.current ? self.current.endTime - self.current.startTime : 0;
 		var nextTimeout = self.current ? next.startTime - self.current.endTime : 0;
-		setTimeout(function() {
+		to1 = setTimeout(function() {
 			self.emit('stop');
-			setTimeout(function() {
+			to2 = setTimeout(function() {
 				self.current = next;
 				self.i++;
 				self.emit('next', next);
@@ -58,6 +60,15 @@ Player.prototype.previous = function() {
 		this.current = previous;
 		this.emit('previous', previous);
 	}
+};
+
+Player.prototype.replay = function() {
+	if (this.current) this.emit('next', this.current);
+};
+
+Player.prototype.clearTimeouts = function() {
+	clearTimeout(to1);
+	clearTimeout(to2);
 };
 
 module.exports = Player;

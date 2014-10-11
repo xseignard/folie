@@ -7,13 +7,15 @@ var dgram = require('dgram'),
 	path = require('path'),
 	osc = require('node-osc'),
 	oscServer = new osc.Server(5001, '0.0.0.0'),
+	oscClient = new osc.Client('192.168.1.24', 5000),
 	Player = require('./src/player'),
-	player = new Player(__dirname + '/srt/folie-250.srt');
+	player = new Player(__dirname + '/srt/folie-250.srt'),
+	prologuePlayer;
 
 // arduinos IP/PORT
 var host = '192.168.2.';
-var first = 2;
-var last = 3;
+var first = 3;
+var last = 4;
 var port = 8888;
 // app receiving messages
 var client = dgram.createSocket('udp4');
@@ -21,9 +23,12 @@ var client = dgram.createSocket('udp4');
 // current text that is displayed
 var current = '';
 // default speed
-var defaultSpeed = 11;
+var defaultSpeed = 10;
 // current speed
-var currentSpeed = 11;
+var currentSpeed = 10;
+
+// switch to know if we are in prologue mode
+var prologue = false;
 
 // set default speed
 client.on('listening', function() {
@@ -44,8 +49,7 @@ client.on('message', function (message, remote) {
 
 client.bind(3333, '192.168.2.1');
 
-
-// app sending messages
+// player for the actes
 player.on('next', function(next) {
 	current = next;
 	console.log(current.text);
@@ -87,11 +91,63 @@ process.stdin.on('keypress', function (ch, key) {
 		switch (key.name) {
 			case 'up':
 			case 'right':
-				player.next();
+				if (!prologue) player.next();
 				break;
 			case 'down':
 			case 'left':
-				player.previous();
+				if (!prologue) player.previous();
+				break;
+			case 'p':
+				prologue = true;
+				if (prologuePlayer) prologuePlayer.clearTimeouts();
+				prologuePlayer = new Player(__dirname + '/srt/prologue.srt');
+				prologuePlayer.on('ready', function(){
+					prologuePlayer.timing();
+				});
+				prologuePlayer.on('next', function(next) {
+					if (prologue) {
+						if (prologuePlayer.i === 3) oscClient.send('/test');
+						current = next;
+						console.log(current.text);
+						console.log('-------------------------');
+						sendText(current.text, host + first);
+						prologuePlayer.timing();
+					}
+				});
+				prologuePlayer.on('end', function() {
+					if (prologue) {
+						prologuePlayer.i = 0;
+						prologuePlayer.timing();
+					}
+				});
+				break;
+			case 'a':
+				prologue = false;
+				break;
+			case 'w':
+				var msg = '';
+				currentSpeed += 3;
+				if (currentSpeed > 19) currentSpeed = 19;
+				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
+				console.log('#00' + msg);
+				console.log('-------------------------');
+				for (var i = first; i <= last; i++) {
+					sendText('#00' + msg, host + i);
+				}
+				break;
+			case 'x':
+				var msg = '';
+				currentSpeed -= 3;
+				if (currentSpeed < 1) currentSpeed = 1;
+				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
+				console.log('#00' + msg);
+				console.log('-------------------------');
+				for (var i = first; i <= last; i++) {
+					sendText('#00' + msg, host + i);
+				}
+				break;
+			case 'r':
+				if (!prologue) player.replay();
 				break;
 		}
 	}
@@ -103,17 +159,12 @@ process.stdin.resume();
 // control from a webapp
 app.use(express.static(__dirname + '/public'));
 
-/*app.get('/', function(req, res){
-	var index = path.join(__dirname, 'public', 'index.html');
-	res.sendFile(index);
-});*/
-
 io.on('connection', function(socket){
 	socket.on('prev', function(){
-		player.previous();
+		if (!prologue) player.previous();
 	});
 	socket.on('next', function(){
-		player.next();
+		if (!prologue) player.next();
 	});
 	socket.on('interval', function(interval){
 		console.log('#00' + interval);
@@ -136,17 +187,21 @@ oscServer.on('message', function (msg, rinfo) {
 		switch(route) {
 			case '/wii/1/button/A':
 			case '/wii/2/button/A':
-				player.next();
+				if (!prologue) player.next();
 				break;
 			case '/wii/1/button/B':
 			case '/wii/2/button/B':
-				player.previous();
+				if (!prologue) player.replay();
+				break;
+			case '/wii/1/button/Down':
+			case '/wii/2/button/Down':
+				if (!prologue) player.previous();
 				break;
 			case '/wii/1/button/Minus':
 			case '/wii/2/button/Minus':
 				var msg = '';
-				currentSpeed += 10;
-				if (currentSpeed > 99) currentSpeed = 99;
+				currentSpeed += 3;
+				if (currentSpeed > 19) currentSpeed = 19;
 				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
 				console.log('#00' + msg);
 				console.log('-------------------------');
@@ -157,7 +212,7 @@ oscServer.on('message', function (msg, rinfo) {
 			case '/wii/1/button/Plus':
 			case '/wii/2/button/Plus':
 				var msg = '';
-				currentSpeed -= 10;
+				currentSpeed -= 3;
 				if (currentSpeed < 1) currentSpeed = 1;
 				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
 				console.log('#00' + msg);
@@ -177,15 +232,45 @@ oscServer.on('message', function (msg, rinfo) {
 				break;
 			case '/wii/1/button/Left':
 			case '/wii/2/button/Left':
-				player.i = -1;
+				if (!prologue) player.i = -1;
 				break;
 			case '/wii/1/button/Up':
 			case '/wii/2/button/Up':
-				player.i = 97;
+				if (!prologue) player.i = 97;
 				break;
 			case '/wii/1/button/Right':
 			case '/wii/2/button/Right':
-				player.i = 195;
+				if (!prologue) player.i = 195;
+				break;
+			case '/wii/1/button/1':
+			case '/wii/2/button/1':
+				prologue = true;
+				if (prologuePlayer) prologuePlayer.clearTimeouts();
+				prologuePlayer = new Player(__dirname + '/srt/prologue.srt');
+				prologuePlayer.on('ready', function(){
+					prologuePlayer.timing();
+				});
+				prologuePlayer.on('next', function(next) {
+					if (prologue) {
+						if (prologuePlayer.i === 3) oscClient.send('/test');
+						current = next;
+						console.log(current.text);
+						console.log('-------------------------');
+						sendText(current.text, host + first);
+						prologuePlayer.timing();
+					}
+				});
+				prologuePlayer.on('end', function() {
+					if (prologue) {
+						prologuePlayer.i = 0;
+						prologuePlayer.timing();
+					}
+				});
+				break;
+			case '/wii/1/button/2':
+			case '/wii/2/button/2':
+				prologue = false;
+				if (prologuePlayer) prologuePlayer.clearTimeouts();
 				break;
 		}
 	}
