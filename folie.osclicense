@@ -1,0 +1,22 @@
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>DateIssued</key>
+	<string>Sat, 11 Oct 2014 14:58:13 +0000</string>
+	<key>LicenseeEmail</key>
+	<string>xavier.seignard@gmail.com</string>
+	<key>LicenseeName</key>
+	<string>SweatLodge</string>
+	<key>Order</key>
+	<string>WIL141011-4632-61117</string>
+	<key>Product</key>
+	<string>OSCulator 2.x</string>
+	<key>Version</key>
+	<string>OSCulator 2.x</string>
+	<key>Signature</key>
+	<data>RiYEvgkvra+Am/aZ5e3R24yZISoddp9B/VHN5+CFKCnjA9T2Zm77Z3hhhpK2masbyLPVNQw0WIsa
+PiOA2F+NQfrdKLGhMoJKTXylpwya+s864gM1d9+VJCJhGvFnEGdfGEeTzFF9m6ikzkIwc/swgKcb
+yTGHnTIxEy6lmXs9TVI=
+</data>
+</dict>
+</plist>

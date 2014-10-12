@@ -7,15 +7,15 @@ var dgram = require('dgram'),
 	path = require('path'),
 	osc = require('node-osc'),
 	oscServer = new osc.Server(5001, '0.0.0.0'),
-	oscClient = new osc.Client('192.168.1.24', 5000),
+	oscClient = new osc.Client('localhost', 5000),
 	Player = require('./src/player'),
 	player = new Player(__dirname + '/srt/folie-250.srt'),
 	prologuePlayer;
 
 // arduinos IP/PORT
 var host = '192.168.2.';
-var first = 3;
-var last = 4;
+var first = 2;
+var last = 5;
 var port = 8888;
 // app receiving messages
 var client = dgram.createSocket('udp4');
@@ -47,7 +47,7 @@ client.on('message', function (message, remote) {
 	}
 });
 
-client.bind(3333, '192.168.2.1');
+client.bind(3333, '192.168.2.6');
 
 // player for the actes
 player.on('next', function(next) {
@@ -65,13 +65,9 @@ player.on('previous', function(previous) {
 });
 
 player.on('end', function() {
-	process.exit();
+	console.log('Fin !');
+	console.log('-------------------------');
 });
-
-process.on('exit', function() {
-	console.log('end!');
-});
-
 
 var sendText = function (text, ip) {
 	var message = new Buffer(text, 'binary');
@@ -106,11 +102,18 @@ process.stdin.on('keypress', function (ch, key) {
 				});
 				prologuePlayer.on('next', function(next) {
 					if (prologue) {
-						if (prologuePlayer.i === 3) oscClient.send('/test');
 						current = next;
 						console.log(current.text);
 						console.log('-------------------------');
-						sendText(current.text, host + first);
+						if (current[0] === '#') {
+							for (var i = first; i <= last; i++) {
+								sendText(current, host + i);
+							}
+							if (current.text === '#0004') oscClient.send('/millumin/action/launchColumn', 1);
+						}
+						else {
+							sendText(current.text, host + first);
+						}
 						prologuePlayer.timing();
 					}
 				});
@@ -252,11 +255,18 @@ oscServer.on('message', function (msg, rinfo) {
 				});
 				prologuePlayer.on('next', function(next) {
 					if (prologue) {
-						if (prologuePlayer.i === 3) oscClient.send('/test');
 						current = next;
 						console.log(current.text);
 						console.log('-------------------------');
-						sendText(current.text, host + first);
+						if (current.text[0] === '#') {
+							for (var i = first; i <= last; i++) {
+								sendText(current.text, host + i);
+							}
+							if (current.text === '#0004') oscClient.send('/millumin/action/launchColumn', 1);
+						}
+						else {
+							sendText(current.text, host + first);
+						}
 						prologuePlayer.timing();
 					}
 				});
