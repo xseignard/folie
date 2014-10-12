@@ -1,0 +1,3 @@
+#!/bin/bash
+cd ~/Desktop/folie; \
+/usr/local/bin/node folie;
