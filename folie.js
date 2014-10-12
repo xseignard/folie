@@ -239,11 +239,11 @@ oscServer.on('message', function (msg, rinfo) {
 				break;
 			case '/wii/1/button/Up':
 			case '/wii/2/button/Up':
-				if (!prologue) player.i = 97;
+				if (!prologue) player.i = 98;
 				break;
 			case '/wii/1/button/Right':
 			case '/wii/2/button/Right':
-				if (!prologue) player.i = 195;
+				if (!prologue) player.i = 200;
 				break;
 			case '/wii/1/button/1':
 			case '/wii/2/button/1':
