@@ -1,10 +1,4 @@
 var dgram = require('dgram'),
-	keypress = require('keypress'),
-	express = require('express'),
-	app = express(),
-	http = require('http').Server(app),
-	io = require('socket.io')(http),
-	path = require('path'),
 	osc = require('node-osc'),
 	oscServer = new osc.Server(5001, '0.0.0.0'),
 	oscClient = new osc.Client('localhost', 5000),
@@ -75,112 +69,6 @@ var sendText = function (text, ip) {
 };
 
 
-// control from the keyboard
-keypress(process.stdin);
-
-// listen for the keypress event
-process.stdin.on('keypress', function (ch, key) {
-	if (key && key.ctrl && key.name == 'c') {
-		process.exit();
-	}
-	else {
-		switch (key.name) {
-			case 'up':
-			case 'right':
-				if (!prologue) player.next();
-				break;
-			case 'down':
-			case 'left':
-				if (!prologue) player.previous();
-				break;
-			case 'p':
-				prologue = true;
-				if (prologuePlayer) prologuePlayer.clearTimeouts();
-				prologuePlayer = new Player(__dirname + '/srt/prologue.srt');
-				prologuePlayer.on('ready', function(){
-					prologuePlayer.timing();
-				});
-				prologuePlayer.on('next', function(next) {
-					if (prologue) {
-						current = next;
-						console.log(current.text);
-						console.log('-------------------------');
-						if (current[0] === '#') {
-							for (var i = first; i <= last; i++) {
-								sendText(current, host + i);
-							}
-							if (current.text === '#0004') oscClient.send('/millumin/action/launchColumn', 1);
-						}
-						else {
-							sendText(current.text, host + first);
-						}
-						prologuePlayer.timing();
-					}
-				});
-				prologuePlayer.on('end', function() {
-					if (prologue) {
-						prologuePlayer.i = 0;
-						prologuePlayer.timing();
-					}
-				});
-				break;
-			case 'a':
-				prologue = false;
-				break;
-			case 'w':
-				var msg = '';
-				currentSpeed += 3;
-				if (currentSpeed > 19) currentSpeed = 19;
-				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
-				console.log('#00' + msg);
-				console.log('-------------------------');
-				for (var i = first; i <= last; i++) {
-					sendText('#00' + msg, host + i);
-				}
-				break;
-			case 'x':
-				var msg = '';
-				currentSpeed -= 3;
-				if (currentSpeed < 1) currentSpeed = 1;
-				currentSpeed < 10 ? msg = '0' + currentSpeed : msg = currentSpeed;
-				console.log('#00' + msg);
-				console.log('-------------------------');
-				for (var i = first; i <= last; i++) {
-					sendText('#00' + msg, host + i);
-				}
-				break;
-			case 'r':
-				if (!prologue) player.replay();
-				break;
-		}
-	}
-});
-
-process.stdin.setRawMode(true);
-process.stdin.resume();
-
-// control from a webapp
-app.use(express.static(__dirname + '/public'));
-
-io.on('connection', function(socket){
-	socket.on('prev', function(){
-		if (!prologue) player.previous();
-	});
-	socket.on('next', function(){
-		if (!prologue) player.next();
-	});
-	socket.on('interval', function(interval){
-		console.log('#00' + interval);
-		console.log('-------------------------');
-		for (var i = first; i <= last; i++) {
-			sendText('#00' + interval, host + i);
-		}
-	});
-});
-
-http.listen(3000);
-
-
 // wii
 oscServer.on('message', function (msg, rinfo) {
 	var route = msg[0],
@@ -239,11 +127,11 @@ oscServer.on('message', function (msg, rinfo) {
 				break;
 			case '/wii/1/button/Up':
 			case '/wii/2/button/Up':
-				if (!prologue) player.i = 98;
+				if (!prologue) player.i = 78;
 				break;
 			case '/wii/1/button/Right':
 			case '/wii/2/button/Right':
-				if (!prologue) player.i = 200;
+				if (!prologue) player.i = 139;
 				break;
 			case '/wii/1/button/1':
 			case '/wii/2/button/1':

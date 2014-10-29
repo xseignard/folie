@@ -14,13 +14,8 @@
   },
   "homepage": "https://github.com/xseignard/folie",
   "dependencies": {
-    "chalk": "^0.5.1",
-    "express": "^4.9.6",
     "iconv-lite": "^0.4.4",
-    "keypress": "^0.2.1",
     "node-osc": "^0.2.1",
-    "serialport": "^1.4.6",
-    "socket.io": "^1.1.0",
     "subtitles-parser": "0.0.2"
   }
 }
