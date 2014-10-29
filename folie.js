@@ -127,7 +127,7 @@ oscServer.on('message', function (msg, rinfo) {
 				break;
 			case '/wii/1/button/Up':
 			case '/wii/2/button/Up':
-				if (!prologue) player.i = 78;
+				if (!prologue) player.i = 114;
 				break;
 			case '/wii/1/button/Right':
 			case '/wii/2/button/Right':
